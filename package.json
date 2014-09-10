@@ -1,0 +1,15 @@
+{
+  "name": "windwardjs",
+  "description": "Easy access to Windward API",
+  "author": {
+    "name": "Vu Tran",
+    "email": "vudooman@gmail.com"
+  },
+  "version": "0.0.1",
+  "dependencies": {
+  },
+  "devDependencies": {
+  },
+  "scripts": {
+  }
+}
