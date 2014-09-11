@@ -1,8 +1,13 @@
-module.exports = function(api) {
-  api.connect = function(userId, deviceId, done) {
-    var deviceInfo = {};
-    var err = {};
+var http = require('http');
 
-    done(deviceInfo, err);
+module.exports = function(api, config) {
+  api.connect = function(userId, deviceId, done) {
+    api.post('/connectedDevices', {
+      userId : userId,
+      deviceId : deviceId
+    }, function(info, error) {
+      config.deviceInfo = info;
+      done(info, error);
+    });
   };
 };
