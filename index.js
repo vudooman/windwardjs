@@ -5,7 +5,8 @@ var api = {};
 var config = {
 	apiHost : 'nodejs-pasorobles.rhcloud.com',
 	apiContext : '',
-	apiPort : 80
+	apiPort : 80,
+	isDebug : false
 };
 
 // Utils module

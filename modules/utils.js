@@ -68,7 +68,12 @@ module.exports = function(api, config) {
 	api.printConfig = function() {
 		console.log(config);
 	};
-
+ 
+	api.debug = function(status) {
+		config.isDebug = status === true;
+		return config.isDebug;
+	};
+	
 	api.setConnectId = function(data) {
 		if (data && config.deviceInfo) {
 			data.connectId = config.deviceInfo.connectId;
