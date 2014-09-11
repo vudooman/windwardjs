@@ -7,7 +7,6 @@ Report.prototype.init = function(api, data, extractor) {
 	this.api = api;
 	return this;
 };
-
 Report.prototype.sendReport = function(path, done) {
 	this.api.setConnectId(this.data);
 	this.api.post(path, this.data, function(info, error) {
@@ -30,17 +29,10 @@ ClimateReport.prototype.humidity = function(value) {
 	return this;
 };
 
-function extractClimate(report, data) {
-	if (data.temperature) {
-		report.data.temperature = data.temperature;
-	}
-	if (data.humidity) {
-		report.data.humidity = data.humidity;
-	}
-}
-
 module.exports = function(api) {
 	api.reportClimate = function(data) {
-		return new ClimateReport().init(api, data, extractClimate);
+		return new ClimateReport().init(api, data, function(report, data) {
+			report.temperature(data.temperature).humidity(data.humidity);
+		});
 	};
 };
