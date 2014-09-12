@@ -5,6 +5,8 @@ function Workflow() {
 		workFlowMaxRuns : -1
 	};
 	this.running = false;
+	this.lastInterval = -1;
+	this.wfTimeout = null;
 }
 
 Workflow.prototype.init = function(api, config) {
@@ -39,36 +41,54 @@ Workflow.prototype.start = function(func) {
 	this.running = true;
 
 	var self = this;
+
+	function getUpdateInterval() {
+		var interval = self.config.apiConfig
+				&& self.config.apiConfig.deviceInfo
+				&& self.config.apiConfig.deviceInfo.updateInterval ? self.config.apiConfig.deviceInfo.updateInterval
+				: 30 * 60 * 1000;
+		if (interval < 5000) {
+			interval = 5000;
+		}
+		return interval;
+	}
+
+	function workflow() {
+		var interval = getUpdateInterval();
+
+		self.config.workflowRunCount++;
+		func(this, interval);
+		if (self.config.workFlowMaxRuns == -1
+				|| self.config.workflowRunCount < self.config.workFlowMaxRuns) {
+			self.wfTimeout = setTimeout(workflow, interval);
+		} else {
+			if (typeof self.config.endFunc == 'function') {
+				self.config.endFunc(self);
+			}
+			self.running = false;
+		}
+	}
+	;
+
 	setImmediate(function status() {
 		self.api.status(function(config, err) {
+			var interval = getUpdateInterval();
+
+			// Reset workflow execution time
+			if (self.wfTimeout && interval != self.lastInterval) {
+				clearTimeout(self.wfTimeout);
+				workflow();
+			}
+			self.lastInterval = interval;
+
+			console.log("self.config.statusInterval: " + self.config.statusInterval);
 			if (self.running) {
 				setTimeout(status, self.config.statusInterval);
 			}
 		});
 	});
 
-	setTimeout(
-			function workflow() {
-				var interval = self.config.apiConfig
-						&& self.config.apiConfig.deviceInfo
-						&& self.config.apiConfig.deviceInfo.updateInterval ? self.config.apiConfig.deviceInfo.updateInterval
-						: 30 * 60 * 1000;
-				if (interval < 5000) {
-					interval = 5000;
-				}
-
-				self.config.workflowRunCount++;
-				func(this, interval);
-				if (self.config.workFlowMaxRuns == -1
-						|| self.config.workflowRunCount < self.config.workFlowMaxRuns) {
-					setTimeout(workflow, interval);
-				} else {
-					if (typeof self.config.endFunc == 'function') {
-						self.config.endFunc(self);
-					}
-					self.running = false;
-				}
-			}, 500);
+	setTimeout(workflow, 500);
 	return this;
 };
 
