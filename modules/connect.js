@@ -4,8 +4,9 @@ var errorsContext = '/errors';
 var devicesContext = '/connectedDevices';
 
 module.exports = function(api, config) {
+
 	/**
-	 * Connect to windward service. Also store device info for other API usage.
+	 * Connect to service. Also store device info for other API usage.
 	 */
 	api.connect = function(userId, deviceId, done) {
 		api.post(devicesContext, {
@@ -21,11 +22,11 @@ module.exports = function(api, config) {
 	};
 
 	/**
-	 * Get latest device info
+	 * Get latest device info and save into config
 	 */
 	api.status = function(done) {
 		api.put(devicesContext, config.deviceInfo, function(info, error) {
-			if(info) {
+			if (info) {
 				config.deviceInfo = info;
 			}
 			done(info, error);
@@ -35,6 +36,9 @@ module.exports = function(api, config) {
 		});
 	};
 
+	/**
+	 * Report error to service
+	 */
 	api.error = function(errorObj) {
 
 		if (config.isDebug) {
