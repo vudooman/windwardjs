@@ -12,6 +12,9 @@ var config = {
 // Utils module
 require('./modules/utils')(api, config);
 
+// Workflow module
+require('./modules/workflow')(api, config);
+
 // Connect module
 require('./modules/connect')(api, config);
 
