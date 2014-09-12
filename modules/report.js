@@ -10,7 +10,12 @@ Report.prototype.init = function(api, data, extractor) {
 Report.prototype.sendReport = function(path, done) {
 	this.api.setConnectId(this.data);
 	this.api.post(path, this.data, function(info, error) {
-		done(info, error);
+		if (error) {
+			api.error(error);
+		}
+		if (typeof done == 'function') {
+			done(info, error);
+		}
 	});
 };
 
