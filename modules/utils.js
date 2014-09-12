@@ -14,13 +14,9 @@ var doPostPut = function(path, content, done, method, config) {
 			} else {
 				error = {
 					errorId : 'statusCodeError',
-					statusCode : res.statusCode
+					statusCode : res.statusCode,
+					message : result
 				};
-				if (res.statusCode == 404) {
-					error.message = 'Resource not available.';
-				} else {
-					error.message = result;
-				}
 			}
 		}
 		done(info, error);
@@ -68,12 +64,12 @@ module.exports = function(api, config) {
 	api.printConfig = function() {
 		console.log(config);
 	};
- 
+
 	api.debug = function(status) {
 		config.isDebug = status === true;
 		return config.isDebug;
 	};
-	
+
 	api.setConnectId = function(data) {
 		if (data && config.deviceInfo) {
 			data.connectId = config.deviceInfo.connectId;
