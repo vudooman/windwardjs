@@ -21,4 +21,7 @@ require('./modules/connect')(api, config);
 // Report module
 require('./modules/report')(api, config);
 
+// Environment module
+require('./modules/environment')(api, config);
+
 module.exports = api;
