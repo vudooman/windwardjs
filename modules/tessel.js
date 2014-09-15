@@ -7,26 +7,53 @@ Tessel.prototype.climate = function(module) {
 	return this;
 };
 
+Tessel.prototype.stopAmbientStats = function() {
+	if(this.modules.ambientStatsInterval) {
+		clearInterval(this.modules.ambientStatsInterval);
+	}
+};
+
+Tessel.prototype.resetAmbientStats = function() {
+	var self = this;
+	this.modules.ambientStats = {
+		maxLight: -1,
+		minLight: Number.MAX_VALUE,
+		countLight: 0,
+		maxSound: -1,
+		minSound: Number.MAX_VALUE,
+		countSound: 0
+	};
+
+	this.modules.ambientStatsInterval = setInterval(function() {
+		self.modules.ambient.getLightLevel(function(err, ldata) {
+			self.modules.ambient.getSoundLevel(function(err, sdata) {
+				if (sdata > self.modules.ambientStats.maxSound) {
+					self.modules.ambientStats.maxSound = sdata;
+				}
+				if (sdata < self.modules.ambientStats.minSound) {
+					self.modules.ambientStats.minSound = sdata;
+				}
+				self.modules.ambientStats.countSound++;
+
+				if (ldata > self.modules.ambientStats.maxLight) {
+					self.modules.ambientStats.maxLight = ldata;
+				}
+				if (sdata < self.modules.ambientStats.minLight) {
+					self.modules.ambientStats.minLight = sdata;
+				}
+				self.modules.ambientStats.countLight++;
+			});
+		});
+	}, 500);
+	return this;
+};
 
 Tessel.prototype.ambient = function(module) {
 	var self = this;
 	this.modules.ambient = module;
-	this.modules.ambientConf = {
-		maxLight: -1,
-		maxSound: -1
-	};
-	setInterval(function() {
-		self.modules.ambient.getLightLevel(function(err, ldata) {
-			self.modules.ambient.getSoundLevel(function(err, sdata) {
-				if (sdata.toFixed(4) > self.modules.ambientConf.maxSound) {
-					self.modules.ambientConf.maxSound = sdata.toFixed(4);
-				}
-				if (ldata.toFixed(4) > self.modules.ambientConf.maxLight) {
-					self.modules.ambientConf.maxLight = ldata.toFixed(4);
-				}
-			});
-		});
-	}, 500);
+	this.resetAmbientStats();
+
+
 	return this;
 };
 
@@ -35,31 +62,10 @@ Tessel.prototype.readClimate = function(data, done) {
 	var self = this;
 	if (self.modules.climate) {
 		self.modules.climate.readTemperature('f', function(err, temp) {
+			data.temperature = temp.toFixed(4);
 			self.modules.climate.readHumidity(function(err, humid) {
-				done({
-					temperature: temp.toFixed(4),
-					humidity: humid.toFixed(4)
-				});
-			});
-		});
-	} else {
-		done({});
-	}
-	return this;
-};
-
-Tessel.prototype.readAmbient = function(data, done) {
-	data = data || {};
-	var self = this;
-	if (self.modules.ambient) {
-		self.modules.ambient.getSoundLevel(function(err, sound) {
-			self.modules.ambient.getLightLevel(function(err, light) {
-				done({
-					sound: sound.toFixed(4),
-					light: light.toFixed(4),
-					maxSound: self.modules.ambientConf.maxLSouund,
-					maxLight: self.modules.ambientConf.maxLight
-				});
+				data.humidity = humid.toFixed(4);
+				done(data);
 			});
 		});
 	} else {
@@ -68,9 +74,28 @@ Tessel.prototype.readAmbient = function(data, done) {
 	return this;
 };
 
-Tessel.prototype.resetAmbient = function() {
-	this.modules.ambientConf.maxLight = -1;
-	this.modules.ambientConf.maxSound = -1;
+Tessel.prototype.readAmbient = function(data, done) {
+	data = data || {};
+	var self = this;
+	if (self.modules.ambient) {
+		self.stopAmbientStats();
+		self.modules.ambient.getSoundLevel(function(err, sound) {
+			data.sound = sound.toFixed(4);
+			data.maxSound = self.modules.ambientStats.maxSound.toFixed(4);
+			data.minSound = self.modules.ambientStats.minSound.toFixed(4);
+			data.countSound = self.modules.ambientStats.countSound;
+			self.modules.ambient.getLightLevel(function(err, light) {
+				data.light = light.toFixed(4);
+				data.maxLight = self.modules.ambientStats.maxSound.toFixed(4);
+				data.minLight = self.modules.ambientStats.minLight.toFixed(4);
+				data.countLight = self.modules.ambientStats.countLight;
+				self.resetAmbientStats();
+				done(data);
+			});
+		});
+	} else {
+		done(data);
+	}
 	return this;
 };
 
@@ -83,4 +108,10 @@ Tessel.prototype.read = function(data, done) {
 		});
 	});
 	return this;
+};
+
+module.exports = function(api, config) {
+	api.tessel = function() {
+		return new Tessel();
+	};
 };
