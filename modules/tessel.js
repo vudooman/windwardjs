@@ -7,6 +7,13 @@ Tessel.prototype.climate = function(module) {
 	return this;
 };
 
+Tessel.prototype.ambient = function(module) {
+	var self = this;
+	this.modules.ambient = module;
+	this.resetAmbientStats();
+	return this;
+};
+
 Tessel.prototype.stopAmbientStats = function() {
 	if(this.modules.ambientStatsInterval) {
 		clearInterval(this.modules.ambientStatsInterval);
@@ -15,12 +22,13 @@ Tessel.prototype.stopAmbientStats = function() {
 
 Tessel.prototype.resetAmbientStats = function() {
 	var self = this;
+	var maxValue = Number.MAX_VALUE || 9999999999999999;
 	this.modules.ambientStats = {
 		maxLight: -1,
-		minLight: Number.MAX_VALUE,
+		minLight: maxValue,
 		countLight: 0,
 		maxSound: -1,
-		minSound: Number.MAX_VALUE,
+		minSound: maxValue,
 		countSound: 0
 	};
 
@@ -45,15 +53,6 @@ Tessel.prototype.resetAmbientStats = function() {
 			});
 		});
 	}, 500);
-	return this;
-};
-
-Tessel.prototype.ambient = function(module) {
-	var self = this;
-	this.modules.ambient = module;
-	this.resetAmbientStats();
-
-
 	return this;
 };
 
