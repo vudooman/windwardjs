@@ -46,8 +46,9 @@ module.exports = function(api, config) {
 			console.log(errorObj);
 		}
 
+		var connectId = config.deviceInfo? config.deviceInfo.connectId : null;
 		api.post(errorsContext, {
-			connectId : config.deviceInfo.connectId,
+			connectId : connectId,
 			error : errorObj
 		}, function(info, error) {
 			if (error && config.isDebug) {
