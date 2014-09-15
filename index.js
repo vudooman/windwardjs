@@ -24,4 +24,7 @@ require('./modules/report')(api, config);
 // Environment module
 require('./modules/environment')(api, config);
 
+// Tessel module
+require('./modules/tessel')(api, config);
+
 module.exports = api;
