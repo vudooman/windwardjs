@@ -6,7 +6,7 @@ var doPostPut = function(path, content, done, method, config) {
 		if (err) {
 			error = {
 				errorId : 'unexpected',
-				message : e.message
+				message : err.message
 			};
 		} else {
 			if (res.statusCode == 200) {
