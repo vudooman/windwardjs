@@ -1,8 +1,8 @@
 function Workflow() {
 	this.config = {
-		statusInterval : 60000,
-		workflowRunCount : 0,
-		workFlowMaxRuns : -1
+		statusInterval: 60000,
+		workflowRunCount: 0,
+		workFlowMaxRuns: -1
 	};
 	this.running = false;
 	this.lastInterval = -1;
@@ -43,10 +43,7 @@ Workflow.prototype.start = function(func) {
 	var self = this;
 
 	function getUpdateInterval() {
-		var interval = self.config.apiConfig
-				&& self.config.apiConfig.deviceInfo
-				&& self.config.apiConfig.deviceInfo.updateInterval ? self.config.apiConfig.deviceInfo.updateInterval
-				: 30 * 60 * 1000;
+		var interval = self.config.apiConfig && self.config.apiConfig.deviceInfo && self.config.apiConfig.deviceInfo.updateInterval ? self.config.apiConfig.deviceInfo.updateInterval : 30 * 60 * 1000;
 		if (interval < 5000) {
 			interval = 5000;
 		}
@@ -57,18 +54,17 @@ Workflow.prototype.start = function(func) {
 		var interval = getUpdateInterval();
 
 		self.config.workflowRunCount++;
-		func(this, interval);
-		if (self.config.workFlowMaxRuns == -1
-				|| self.config.workflowRunCount < self.config.workFlowMaxRuns) {
-			self.wfTimeout = setTimeout(workflow, interval);
-		} else {
-			if (typeof self.config.endFunc == 'function') {
-				self.config.endFunc(self);
+		func(this, interval, function() {
+			if (self.config.workFlowMaxRuns == -1 || self.config.workflowRunCount < self.config.workFlowMaxRuns) {
+				self.wfTimeout = setTimeout(workflow, interval);
+			} else {
+				if (typeof self.config.endFunc == 'function') {
+					self.config.endFunc(self);
+				}
+				self.running = false;
 			}
-			self.running = false;
-		}
+		});
 	}
-	;
 
 	setImmediate(function status() {
 		self.api.status(function(config, err) {
