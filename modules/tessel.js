@@ -1,6 +1,52 @@
 function Tessel() {
 	this.modules = {};
+	this.wifi = null;
+	this.onWifiConnectedCallbacks = [];
+	this.wifiReconnecting = false;
 }
+
+Tessel.prototype.wifi = function(wifi) {
+	var self = this;
+	this.wifi = wifi;
+	wifi.on('connect', function() {
+		console.log("I got connected");
+		self.onWifiConnectedCallbacks.forEach(function(item) {
+			item();
+		});
+		self.onWifiConnectedCallbacks = [];
+	});
+
+	function reconnectWifi() {
+		if (!self.wifiReconnecting) {
+			self.wifiReconnecting = true;
+			setTimeout(function reset() {
+				wifi.reset();
+				setTimeout(function resetCheck() {
+					if (wifi.isConnected()) {
+						self.wifiReconnecting = false;
+					} else {
+						if (wifi.isBusy()) {
+							setTimeout(resetCheck, 2000);
+						} else {
+							reset();
+						}
+					}
+				}, 2000);
+			}, 500);
+		}
+	}
+
+	wifi.on('disconnect', function() {
+		console.log("I got disconnected");
+		reconnectWifi();
+	});
+
+	wifi.on('error', function() {
+		console.log("I got errored");
+		reconnectWifi();
+	});
+	return this;
+};
 
 Tessel.prototype.climate = function(module) {
 	this.modules.climate = module;
@@ -8,14 +54,13 @@ Tessel.prototype.climate = function(module) {
 };
 
 Tessel.prototype.ambient = function(module) {
-	var self = this;
 	this.modules.ambient = module;
 	this.resetAmbientStats();
 	return this;
 };
 
 Tessel.prototype.stopAmbientStats = function() {
-	if(this.modules.ambientStatsInterval) {
+	if (this.modules.ambientStatsInterval) {
 		clearInterval(this.modules.ambientStatsInterval);
 	}
 };
@@ -98,12 +143,26 @@ Tessel.prototype.readAmbient = function(data, done) {
 	return this;
 };
 
+Tessel.prototype.runWifiRequiredTask = function(task) {
+	if (this.wifi) {
+		if (this.wifi.isConnected()) {
+			task();
+		} else {
+			this.onWifiConnectedCallbacks.push(task);
+		}
+	} else {
+		task();
+	}
+};
+
 Tessel.prototype.read = function(data, done) {
 	data = data || {};
 	var self = this;
-	self.readClimate(data, function() {
-		self.readAmbient(data, function() {
-			done(data);
+	self.runWifiRequiredTask(function() {
+		self.readClimate(data, function() {
+			self.readAmbient(data, function() {
+				done(data);
+			});
 		});
 	});
 	return this;
