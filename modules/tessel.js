@@ -20,30 +20,39 @@ Tessel.prototype.log = function(message) {
 Tessel.prototype.workflow = function(wf) {
 	var self = this;
 
-	function blink(led, blinkInfo) {
-		(function doBlink() {
-			led.output(0);
-			led.output(1);
-			if (blinkInfo.index < blinkInfo.total) {
-				blinkInfo.index++;
-				setTimeout(doBlink, blinkInfo.interval);
+	function blinkStatus(blinkInfo) {
+		(function doBlinkStatus() {
+			self.tessel.led[0].toggle();
+			if (++blinkInfo.index < blinkInfo.total) {
+				setTimeout(doBlinkStatus, blinkInfo.interval);
 			} else {
-				led.output(0);
+				self.tessel.led[0].output(0);
 			}
 		})();
 	}
 
-	function createBlinkInfo(info, err) {
-		var blinkCount = 3,
-			blinkInterval = 1000;
+	function blinkWF(blinkInfo) {
+		(function doBlinkWF() {
+			self.tessel.led[1].toggle();
+			if (++blinkInfo.index < blinkInfo.total) {
+				setTimeout(doBlinkWF, blinkInfo.interval);
+			} else {
+				self.tessel.led[1].output(0);
+			}
+		})();
+	}
+
+	function createBlinkInfo(info, err, id) {
+		var blinkCount = 1,
+			blinkInterval = 300;
 		if (err) {
-			blinkCount = 10;
-			blinkInterval = 500;
+			blinkCount = 20;
 		}
 		return {
 			index: 0,
 			total: blinkCount,
-			interval: blinkInterval
+			interval: blinkInterval,
+			id: id
 		};
 	}
 
@@ -52,15 +61,15 @@ Tessel.prototype.workflow = function(wf) {
 			self.tessel.led[0].output(1);
 		});
 		wf.on('statusComplete', function(info, err) {
-			var blinkInfo = createBlinkInfo(info, err);
-			blink(self.tessel.led[0], blinkInfo)
+			var blinkInfo = createBlinkInfo(info, 'test', 'status');
+			blinkStatus(blinkInfo);
 		});
 		wf.on('workflowStart', function() {
 			self.tessel.led[1].output(1);
 		});
 		wf.on('workflowComplete', function(info, err) {
-			var blinkInfo = createBlinkInfo(info, err);
-			blink(self.tessel.led[1], blinkInfo)
+			var blinkInfo = createBlinkInfo(info, err, 'workflow');
+			blinkWF(blinkInfo);
 		});
 	}
 	return this;
