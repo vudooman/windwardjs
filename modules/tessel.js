@@ -1,15 +1,76 @@
-function Tessel() {
+function Tessel(tessel) {
+	this.tessel = tessel;
 	this.modules = {};
 	this.wifi = null;
 	this.onWifiConnectedCallbacks = [];
 	this.wifiReconnecting = false;
+	this.externalLogger = null;
 }
+
+Tessel.prototype.log = function(message) {
+	message += " [" + new Date() + "]";
+	if (this.externalLogger) {
+		this.externalLogger.log(message);
+	} else {
+		console.log(message);
+	}
+	return this;
+};
+
+Tessel.prototype.workflow = function(wf) {
+	var self = this;
+
+	function blink(led, blinkInfo) {
+		(function doBlink() {
+			led.output(0);
+			led.output(1);
+			if (blinkInfo.index < blinkInfo.total) {
+				blinkInfo.index++;
+				setTimeout(doBlink, blinkInfo.interval);
+			} else {
+				led.output(0);
+			}
+		})();
+	}
+
+	function createBlinkInfo(info, err) {
+		var blinkCount = 3,
+			blinkInterval = 1000;
+		if (err) {
+			blinkCount = 10;
+			blinkInterval = 500;
+		}
+		return {
+			index: 0,
+			total: blinkCount,
+			interval: blinkInterval
+		};
+	}
+
+	if (wf && self.tessel) {
+		wf.on('statusStart', function() {
+			self.tessel.led[0].output(1);
+		});
+		wf.on('statusComplete', function(info, err) {
+			var blinkInfo = createBlinkInfo(info, err);
+			blink(self.tessel.led[0], blinkInfo)
+		});
+		wf.on('workflowStart', function() {
+			self.tessel.led[1].output(1);
+		});
+		wf.on('workflowComplete', function(info, err) {
+			var blinkInfo = createBlinkInfo(info, err);
+			blink(self.tessel.led[1], blinkInfo)
+		});
+	}
+	return this;
+};
 
 Tessel.prototype.wifi = function(wifi) {
 	var self = this;
 	this.wifi = wifi;
 	wifi.on('connect', function() {
-		console.log("I got connected");
+		self.log("I got connected");
 		self.onWifiConnectedCallbacks.forEach(function(item) {
 			item();
 		});
@@ -37,12 +98,12 @@ Tessel.prototype.wifi = function(wifi) {
 	}
 
 	wifi.on('disconnect', function() {
-		console.log("I got disconnected");
+		self.log("I got disconnected");
 		reconnectWifi();
 	});
 
 	wifi.on('error', function() {
-		console.log("I got errored");
+		self.log("I got errored");
 		reconnectWifi();
 	});
 	return this;
@@ -169,7 +230,7 @@ Tessel.prototype.read = function(data, done) {
 };
 
 module.exports = function(api, config) {
-	api.tessel = function() {
-		return new Tessel();
+	api.tessel = function(tessel) {
+		return new Tessel(tessel);
 	};
 };
