@@ -7,7 +7,27 @@ function Workflow() {
 	this.running = false;
 	this.lastInterval = -1;
 	this.wfTimeout = null;
+	this.handlers = {
+		statusStart: [],
+		statusComplete: [],
+		workflowStart: [],
+		workflowComplete: []
+	}
 }
+
+Workflow.prototype.on = function(event, handler) {
+	if (this.handlers[event]) {
+		this.handlers[event].push(handler);
+	}
+	return this;
+};
+
+Workflow.prototype.off = function(event, handler) {
+	if (this.handlers[event] && this.handlers[event].indexOf(handler) != -1) {
+		this.handlers[event].splice(this.handlers[event].indexOf(handler), 1);
+	}
+	return this;
+};
 
 Workflow.prototype.init = function(api, config) {
 	this.api = api;
@@ -51,9 +71,17 @@ Workflow.prototype.start = function(func) {
 	}
 
 	function workflow() {
+		
+		self.config.workflowRunCount++;
+		
+		if (self.handlers['workflowStart'].length > 0) {
+			self.handlers['workflowStart'].forEach(function(item) {
+				item(self.config.workflowRunCount);
+			});
+		}
+		
 		var interval = getUpdateInterval();
 
-		self.config.workflowRunCount++;
 		func(this, interval, function() {
 			if (self.config.workFlowMaxRuns == -1 || self.config.workflowRunCount < self.config.workFlowMaxRuns) {
 				self.wfTimeout = setTimeout(workflow, interval);
@@ -67,7 +95,18 @@ Workflow.prototype.start = function(func) {
 	}
 
 	setImmediate(function status() {
+		if (self.handlers['statusStart'].length > 0) {
+			self.handlers['statusStart'].forEach(function(item) {
+				item();
+			});
+		}
 		self.api.status(function(config, err) {
+
+			if (self.handlers['statusComplete'].length > 0) {
+				self.handlers['statusComplete'].forEach(function(item) {
+					item(config, err);
+				});
+			}
 			var interval = getUpdateInterval();
 
 			// Reset workflow execution time
@@ -77,7 +116,6 @@ Workflow.prototype.start = function(func) {
 			}
 			self.lastInterval = interval;
 
-			console.log("self.config.statusInterval: " + self.config.statusInterval);
 			if (self.running) {
 				setTimeout(status, self.config.statusInterval);
 			}
