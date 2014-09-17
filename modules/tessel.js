@@ -61,7 +61,7 @@ Tessel.prototype.workflow = function(wf) {
 			self.tessel.led[0].output(1);
 		});
 		wf.on('statusComplete', function(info, err) {
-			var blinkInfo = createBlinkInfo(info, 'test', 'status');
+			var blinkInfo = createBlinkInfo(info, err, 'status');
 			blinkStatus(blinkInfo);
 		});
 		wf.on('workflowStart', function() {
