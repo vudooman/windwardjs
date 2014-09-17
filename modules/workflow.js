@@ -12,7 +12,7 @@ function Workflow() {
 		statusComplete: [],
 		workflowStart: [],
 		workflowComplete: []
-	}
+	};
 }
 
 Workflow.prototype.on = function(event, handler) {
@@ -73,7 +73,7 @@ Workflow.prototype.start = function(func) {
 	function workflow() {
 		
 		self.config.workflowRunCount++;
-		
+
 		if (self.handlers['workflowStart'].length > 0) {
 			self.handlers['workflowStart'].forEach(function(item) {
 				item(self.config.workflowRunCount);
@@ -82,7 +82,13 @@ Workflow.prototype.start = function(func) {
 		
 		var interval = getUpdateInterval();
 
-		func(this, interval, function() {
+		func(this, interval, function(info, err) {
+			if (self.handlers['workflowComplete'].length > 0) {
+				self.handlers['workflowComplete'].forEach(function(item) {
+					item(info, err);
+				});
+			}
+			
 			if (self.config.workFlowMaxRuns == -1 || self.config.workflowRunCount < self.config.workFlowMaxRuns) {
 				self.wfTimeout = setTimeout(workflow, interval);
 			} else {
