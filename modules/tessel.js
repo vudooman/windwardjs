@@ -89,7 +89,7 @@ Tessel.prototype.workflow = function(wf) {
 
 Tessel.prototype.wifi = function(wifi) {
 	var self = this;
-	this.wifi = wifi;
+	self.wifi = wifi;
 	wifi.on('connect', function() {
 		self.log("I got connected");
 		self.onWifiConnectedCallbacks.forEach(function(item) {
@@ -99,22 +99,24 @@ Tessel.prototype.wifi = function(wifi) {
 	});
 
 	
-	(function reconnectWifi() {
-		if(self.wifi.isConneted()) {
-			// Recheck in 1 minute
-			console.log("Wifi is connected, will check in a minute.");
-			setTimeout(reconnectWifi, 60*1000);
-		} else if(self.wifi.isBusy()) {
-			// Reconnection may be happening, recheck in 10 seconds
-			console.log("Wifi is busy, will check in 10 seconds.");
-			setTimeout(reconnectWifi, 10*1000);
-		} else {
-			// Reconnect and give 30 seconds before retrying
-			self.wifi.reset();
-			console.log("Wifi is reconnecting, will check in 30 seconds.");
-			setTimeout(reconnectWifi, 30*1000);
+	(function(wifi) {
+		function reconnectWifi() {
+			if(wifi.isConneted()) {
+				// Recheck in 1 minute
+				console.log("Wifi is connected, will check in a minute.");
+				setTimeout(reconnectWifi, 60*1000);
+			} else if(wifi.isBusy()) {
+				// Reconnection may be happening, recheck in 10 seconds
+				console.log("Wifi is busy, will check in 10 seconds.");
+				setTimeout(reconnectWifi, 10*1000);
+			} else {
+				// Reconnect and give 30 seconds before retrying
+				wifi.reset();
+				console.log("Wifi is reconnecting, will check in 30 seconds.");
+				setTimeout(reconnectWifi, 30*1000);
+			}
 		}
-	})();
+	})(wifi);
 	
 	/*
 	function reconnectWifi() {
@@ -217,7 +219,7 @@ Tessel.prototype.readAmbient = function(data, done) {
 			self.modules.ambientStats.sound.push(sound);
 			self.modules.ambient.getLightLevel(function(err, light) {
 				self.modules.ambientStats.light.push(light);	
-				data.light = self.modules.ambientStats.light
+				data.light = self.modules.ambientStats.light;
 				data.sound = self.modules.ambientStats.sound;
 				self.resetAmbientStats();
 				done(data);
