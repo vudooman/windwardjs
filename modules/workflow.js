@@ -74,8 +74,8 @@ Workflow.prototype.start = function(func) {
 		
 		self.config.workflowRunCount++;
 
-		if (self.handlers['workflowStart'].length > 0) {
-			self.handlers['workflowStart'].forEach(function(item) {
+		if (self.handlers.workflowStart.length > 0) {
+			self.handlers.workflowStart.forEach(function(item) {
 				item(self.config.workflowRunCount);
 			});
 		}
@@ -83,8 +83,8 @@ Workflow.prototype.start = function(func) {
 		var interval = getUpdateInterval();
 
 		func(this, interval, function(info, err) {
-			if (self.handlers['workflowComplete'].length > 0) {
-				self.handlers['workflowComplete'].forEach(function(item) {
+			if (self.handlers.workflowComplete.length > 0) {
+				self.handlers.workflowComplete.forEach(function(item) {
 					item(info, err);
 				});
 			}
@@ -101,15 +101,15 @@ Workflow.prototype.start = function(func) {
 	}
 
 	setImmediate(function status() {
-		if (self.handlers['statusStart'].length > 0) {
-			self.handlers['statusStart'].forEach(function(item) {
+		if (self.handlers.statusStart.length > 0) {
+			self.handlers.statusStart.forEach(function(item) {
 				item();
 			});
 		}
 		self.api.status(function(config, err) {
 
-			if (self.handlers['statusComplete'].length > 0) {
-				self.handlers['statusComplete'].forEach(function(item) {
+			if (self.handlers.statusComplete.length > 0) {
+				self.handlers.statusComplete.forEach(function(item) {
 					item(config, err);
 				});
 			}
