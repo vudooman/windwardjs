@@ -7,6 +7,7 @@
   },
   "version": "0.0.3",
   "dependencies": {
+    mathjs: "1.0.1"
   },
   "devDependencies": {
   },
