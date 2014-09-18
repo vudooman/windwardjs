@@ -63,6 +63,18 @@ Tessel.prototype.workflow = function(wf) {
 		wf.on('statusComplete', function(info, err) {
 			var blinkInfo = createBlinkInfo(info, err, 'status');
 			blinkStatus(blinkInfo);
+			if (!err && self.modules.relay) {
+				if (info.relayChannelOneOn === true) {
+					self.modules.relay.turnOn(1);
+				} else {
+					self.modules.relay.turnOff(1);
+				}
+				if (info.relayChannelTwoOn === true) {
+					self.modules.relay.turnOn(2);
+				} else {
+					self.modules.relay.turnOff(2);
+				}
+			}
 		});
 		wf.on('workflowStart', function() {
 			self.tessel.led[1].output(1);
@@ -86,6 +98,25 @@ Tessel.prototype.wifi = function(wifi) {
 		self.onWifiConnectedCallbacks = [];
 	});
 
+	
+	(function reconnectWifi() {
+		if(self.wifi.isConneted()) {
+			// Recheck in 1 minute
+			console.log("Wifi is connected, will check in a minute.");
+			setTimeout(reconnectWifi, 60*1000);
+		} else if(self.wifi.isBusy()) {
+			// Reconnection may be happening, recheck in 10 seconds
+			console.log("Wifi is busy, will check in 10 seconds.");
+			setTimeout(reconnectWifi, 10*1000);
+		} else {
+			// Reconnect and give 30 seconds before retrying
+			self.wifi.reset();
+			console.log("Wifi is reconnecting, will check in 30 seconds.");
+			setTimeout(reconnectWifi, 30*1000);
+		}
+	})();
+	
+	/*
 	function reconnectWifi() {
 		if (!self.wifiReconnecting) {
 			self.wifiReconnecting = true;
@@ -115,6 +146,12 @@ Tessel.prototype.wifi = function(wifi) {
 		self.log("I got errored");
 		reconnectWifi();
 	});
+	*/
+	return this;
+};
+
+Tessel.prototype.relay = function(module) {
+	this.modules.relay = module;
 	return this;
 };
 
@@ -139,32 +176,15 @@ Tessel.prototype.resetAmbientStats = function() {
 	var self = this;
 	var maxValue = Number.MAX_VALUE || 9999999999999999;
 	this.modules.ambientStats = {
-		maxLight: -1,
-		minLight: maxValue,
-		countLight: 0,
-		maxSound: -1,
-		minSound: maxValue,
-		countSound: 0
+		light: [],
+		sound: []
 	};
 
 	this.modules.ambientStatsInterval = setInterval(function() {
 		self.modules.ambient.getLightLevel(function(err, ldata) {
+			self.modules.ambientStats.light.push(ldata);
 			self.modules.ambient.getSoundLevel(function(err, sdata) {
-				if (sdata > self.modules.ambientStats.maxSound) {
-					self.modules.ambientStats.maxSound = sdata;
-				}
-				if (sdata < self.modules.ambientStats.minSound) {
-					self.modules.ambientStats.minSound = sdata;
-				}
-				self.modules.ambientStats.countSound++;
-
-				if (ldata > self.modules.ambientStats.maxLight) {
-					self.modules.ambientStats.maxLight = ldata;
-				}
-				if (sdata < self.modules.ambientStats.minLight) {
-					self.modules.ambientStats.minLight = sdata;
-				}
-				self.modules.ambientStats.countLight++;
+				self.modules.ambientStats.sound.push(sdata);
 			});
 		});
 	}, 500);
@@ -194,15 +214,11 @@ Tessel.prototype.readAmbient = function(data, done) {
 	if (self.modules.ambient) {
 		self.stopAmbientStats();
 		self.modules.ambient.getSoundLevel(function(err, sound) {
-			data.sound = sound.toFixed(4);
-			data.maxSound = self.modules.ambientStats.maxSound.toFixed(4);
-			data.minSound = self.modules.ambientStats.minSound.toFixed(4);
-			data.countSound = self.modules.ambientStats.countSound;
+			self.modules.ambientStats.sound.push(sound);
 			self.modules.ambient.getLightLevel(function(err, light) {
-				data.light = light.toFixed(4);
-				data.maxLight = self.modules.ambientStats.maxSound.toFixed(4);
-				data.minLight = self.modules.ambientStats.minLight.toFixed(4);
-				data.countLight = self.modules.ambientStats.countLight;
+				self.modules.ambientStats.light.push(light);	
+				data.light = self.api.stats(self.modules.ambientStats.light);
+				data.sound = self.api.stats(self.modules.ambientStats.sound);
 				self.resetAmbientStats();
 				done(data);
 			});
@@ -210,7 +226,7 @@ Tessel.prototype.readAmbient = function(data, done) {
 	} else {
 		done(data);
 	}
-	return this;
+	return this; 
 };
 
 Tessel.prototype.runWifiRequiredTask = function(task) {
