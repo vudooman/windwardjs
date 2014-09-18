@@ -217,8 +217,8 @@ Tessel.prototype.readAmbient = function(data, done) {
 			self.modules.ambientStats.sound.push(sound);
 			self.modules.ambient.getLightLevel(function(err, light) {
 				self.modules.ambientStats.light.push(light);	
-				data.light = self.api.stats(self.modules.ambientStats.light);
-				data.sound = self.api.stats(self.modules.ambientStats.sound);
+				data.light = self.modules.ambientStats.light
+				data.sound = self.modules.ambientStats.sound;
 				self.resetAmbientStats();
 				done(data);
 			});

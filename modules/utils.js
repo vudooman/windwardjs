@@ -1,5 +1,4 @@
 var http = require('http');
-var math = require('mathjs');
 
 var doPostPut = function(path, content, done, method, config) {
 	var postHandler = function(res, result, err) {
@@ -84,16 +83,4 @@ module.exports = function(api, config) {
 	api.put = function(path, content, done) {
 		doPostPut(path, content, done, "PUT", config);
 	};
-	
-	api.stats = function(data) {
-		return {
-          max: math.max(data),
-          min: math.min(data),
-          mean: math.mean(data),
-          median: math.median(data),
-          std: math.std(data),
-          sum: math.sum(data),
-          n: data.length
-        };
-	};	
 };
