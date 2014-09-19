@@ -217,7 +217,7 @@ Tessel.prototype.readClimate = function(data, done) {
 Tessel.prototype.readAmbient = function(data, done) {
 	data = data || {};
 	var self = this;
-	if (self.modules.ambient) {
+	function doRead() {
 		self.stopAmbientStats();
 		self.modules.ambient.getSoundLevel(function(err, sound) {
 			self.modules.ambientStats.sound.push(sound);
@@ -229,6 +229,13 @@ Tessel.prototype.readAmbient = function(data, done) {
 				done(data);
 			});
 		});
+	}
+	if (self.modules.ambient) {
+		if(self.modules.ambient.connected) {
+			doRead();
+		} else {
+			self.modules.ambient.on('ready', doRead);
+		}
 	} else {
 		done(data);
 	}
