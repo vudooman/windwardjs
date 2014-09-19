@@ -6,10 +6,11 @@ Environment.prototype.init = function(api, data) {
 	return this;
 };
 Environment.prototype.send = function(done) {
-	this.api.setConnectId(this.data);
-	this.api.post('/environmentAttrs', this.data, function(info, error) {
+	var self = this;
+	self.api.setConnectId(this.data);
+	self.api.post('/environmentAttrs', this.data, function(info, error) {
 		if (error) {
-			api.error(error);
+			self.api.error(error);
 		}
 		if (typeof done == 'function') {
 			done(info, error);
