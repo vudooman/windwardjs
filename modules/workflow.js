@@ -13,6 +13,7 @@ function Workflow() {
 		workflowStart: [],
 		workflowComplete: []
 	};
+	this.pendingWorkflow = null;
 }
 
 Workflow.prototype.on = function(event, handler) {
@@ -71,33 +72,38 @@ Workflow.prototype.start = function(func) {
 	}
 
 	function workflow() {
-		
-		self.config.workflowRunCount++;
+		self.pendingWorkflow = function() {
 
-		if (self.handlers.workflowStart.length > 0) {
-			self.handlers.workflowStart.forEach(function(item) {
-				item(self.config.workflowRunCount);
-			});
-		}
-		
-		var interval = getUpdateInterval();
+			// Make null to only run once
+			self.pendingWorkflow = null;
 
-		func(this, interval, function(info, err) {
-			if (self.handlers.workflowComplete.length > 0) {
-				self.handlers.workflowComplete.forEach(function(item) {
-					item(info, err);
+			self.config.workflowRunCount++;
+
+			if (self.handlers.workflowStart.length > 0) {
+				self.handlers.workflowStart.forEach(function(item) {
+					item(self.config.workflowRunCount);
 				});
 			}
-			
-			if (self.config.workFlowMaxRuns == -1 || self.config.workflowRunCount < self.config.workFlowMaxRuns) {
-				self.wfTimeout = setTimeout(workflow, interval);
-			} else {
-				if (typeof self.config.endFunc == 'function') {
-					self.config.endFunc(self);
+
+			var interval = getUpdateInterval();
+
+			func(this, interval, function(info, err) {
+				if (self.handlers.workflowComplete.length > 0) {
+					self.handlers.workflowComplete.forEach(function(item) {
+						item(info, err);
+					});
 				}
-				self.running = false;
-			}
-		});
+
+				if (self.config.workFlowMaxRuns == -1 || self.config.workflowRunCount < self.config.workFlowMaxRuns) {
+					self.wfTimeout = setTimeout(workflow, interval);
+				} else {
+					if (typeof self.config.endFunc == 'function') {
+						self.config.endFunc(self);
+					}
+					self.running = false;
+				}
+			});
+		};
 	}
 
 	setImmediate(function status() {
@@ -122,13 +128,17 @@ Workflow.prototype.start = function(func) {
 			}
 			self.lastInterval = interval;
 
+			if (typeof self.pendingWorkflow == 'function') {
+				self.pendingWorkflow();
+			}
+
 			if (self.running) {
 				setTimeout(status, self.config.statusInterval);
 			}
 		});
 	});
 
-	setTimeout(workflow, 500);
+	setTimeout(workflow, 100);
 	return this;
 };
 
