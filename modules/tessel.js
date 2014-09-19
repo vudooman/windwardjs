@@ -1,10 +1,11 @@
-function Tessel(tessel) {
+function Tessel(tessel, api) {
 	this.tessel = tessel;
 	this.modules = {};
 	this.wifi = null;
 	this.onWifiConnectedCallbacks = [];
 	this.wifiReconnecting = false;
 	this.externalLogger = null;
+	this.api = api;
 }
 
 Tessel.prototype.log = function(message) {
@@ -183,14 +184,8 @@ Tessel.prototype.resetAmbientStats = function() {
 	this.modules.ambientStatsInterval = setInterval(function() {
 		self.modules.ambient.getLightLevel(function(err, ldata) {
 			self.modules.ambientStats.light.push(ldata);
-			if(self.modules.ambientStats.light.length > 1000) {
-				self.modules.ambientStats.light.shift();
-			}
 			self.modules.ambient.getSoundLevel(function(err, sdata) {
 				self.modules.ambientStats.sound.push(sdata);
-				if(self.modules.ambientStats.sound.length > 1000) {
-					self.modules.ambientStats.sound.shift();
-				}
 			});
 		});
 	}, 500);
@@ -223,8 +218,8 @@ Tessel.prototype.readAmbient = function(data, done) {
 			self.modules.ambientStats.sound.push(sound);
 			self.modules.ambient.getLightLevel(function(err, light) {
 				self.modules.ambientStats.light.push(light);	
-				data.light = self.modules.ambientStats.light;
-				data.sound = self.modules.ambientStats.sound;
+				data.light = self.api.stats(self.modules.ambientStats.light);
+				data.sound = self.api.stats(self.modules.ambientStats.sound);
 				self.resetAmbientStats();
 				done(data);
 			});
@@ -269,6 +264,6 @@ Tessel.prototype.read = function(data, done) {
 
 module.exports = function(api, config) {
 	api.tessel = function(tessel) {
-		return new Tessel(tessel);
+		return new Tessel(tessel, api);
 	};
 };
