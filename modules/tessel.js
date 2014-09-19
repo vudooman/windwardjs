@@ -91,32 +91,31 @@ Tessel.prototype.wifi = function(wifi) {
 	var self = this;
 	self.wifi = wifi;
 	wifi.on('connect', function() {
-		self.log("I got connected");
+		self.log("I got WIFI connected");
 		self.onWifiConnectedCallbacks.forEach(function(item) {
 			item();
 		});
 		self.onWifiConnectedCallbacks = [];
 	});
 
-	
-	(function(wifi) {
-		function reconnectWifi() {
-			if(wifi.isConneted()) {
-				// Recheck in 1 minute
-				console.log("Wifi is connected, will check in a minute.");
-				setTimeout(reconnectWifi, 60*1000);
-			} else if(wifi.isBusy()) {
-				// Reconnection may be happening, recheck in 10 seconds
-				console.log("Wifi is busy, will check in 10 seconds.");
-				setTimeout(reconnectWifi, 10*1000);
-			} else {
-				// Reconnect and give 30 seconds before retrying
-				wifi.reset();
-				console.log("Wifi is reconnecting, will check in 30 seconds.");
-				setTimeout(reconnectWifi, 30*1000);
-			}
+
+	function reconnectWifi() {
+		if(wifi.isConnected()) {
+			// Recheck in 1 minute
+			console.log("Wifi is connected, will check in a minute.");
+			setTimeout(reconnectWifi, 60*1000);
+		} else if(wifi.isBusy()) {
+			// Reconnection may be happening, recheck in 10 seconds
+			console.log("Wifi is busy, will check in 10 seconds.");
+			setTimeout(reconnectWifi, 10*1000);
+		} else {
+			// Reconnect and give 30 seconds before retrying
+			wifi.reset();
+			console.log("Wifi is reconnecting, will check in 30 seconds.");
+			setTimeout(reconnectWifi, 30*1000);
 		}
-	})(wifi);
+	}
+	reconnectWifi();
 	
 	/*
 	function reconnectWifi() {
@@ -176,7 +175,6 @@ Tessel.prototype.stopAmbientStats = function() {
 
 Tessel.prototype.resetAmbientStats = function() {
 	var self = this;
-	var maxValue = Number.MAX_VALUE || 9999999999999999;
 	this.modules.ambientStats = {
 		light: [],
 		sound: []
@@ -185,8 +183,14 @@ Tessel.prototype.resetAmbientStats = function() {
 	this.modules.ambientStatsInterval = setInterval(function() {
 		self.modules.ambient.getLightLevel(function(err, ldata) {
 			self.modules.ambientStats.light.push(ldata);
+			if(self.modules.ambientStats.light.length > 1000) {
+				self.modules.ambientStats.light.shift();
+			}
 			self.modules.ambient.getSoundLevel(function(err, sdata) {
 				self.modules.ambientStats.sound.push(sdata);
+				if(self.modules.ambientStats.sound.length > 1000) {
+					self.modules.ambientStats.sound.shift();
+				}
 			});
 		});
 	}, 500);
@@ -228,7 +232,7 @@ Tessel.prototype.readAmbient = function(data, done) {
 	} else {
 		done(data);
 	}
-	return this; 
+	return this;
 };
 
 Tessel.prototype.runWifiRequiredTask = function(task) {
