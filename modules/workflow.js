@@ -129,7 +129,7 @@ Workflow.prototype.start = function(func) {
 			self.lastInterval = interval;
 
 			if (typeof self.pendingWorkflow == 'function') {
-				self.pendingWorkflow();
+				setTimeout(self.pendingWorkflow, 10000);
 			}
 
 			if (self.running) {
