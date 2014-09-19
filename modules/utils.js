@@ -59,6 +59,47 @@ var doPostPut = function(path, content, done, method, config) {
 	req.end();
 };
 
+var isArray = function (obj) {
+	return Object.prototype.toString.call(obj) === "[object Array]";
+},
+
+getNumWithSetDec = function(num, numOfDec) {
+	var pow10s = Math.pow(10, numOfDec || 0);
+	return (numOfDec) ? Math.round(pow10s * num) / pow10s : num;
+};
+
+getAverageFromNumArr = function(numArr, numOfDec) {
+	if (!isArray(numArr)) {
+		return false;
+	}
+	var i = numArr.length, sum = 0;
+	while (i--) {
+		sum += numArr[i];
+	}
+	return getNumWithSetDec((sum / numArr.length), numOfDec);
+};
+
+getVariance = function(numArr, numOfDec) {
+	if (!isArray(numArr)) {
+		return false;
+	}
+	var avg = getAverageFromNumArr(numArr, numOfDec), i = numArr.length, v = 0;
+
+	while (i--) {
+		v += Math.pow((numArr[i] - avg), 2);
+	}
+	v /= numArr.length;
+	return getNumWithSetDec(v, numOfDec);
+};
+
+getStandardDeviation = function(numArr, numOfDec) {
+	if (!isArray(numArr)) {
+		return false;
+	}
+	var stdDev = Math.sqrt(getVariance(numArr, numOfDec));
+	return getNumWithSetDec(stdDev, numOfDec);
+};
+
 module.exports = function(api, config) {
 
 	api.printConfig = function() {
@@ -82,5 +123,16 @@ module.exports = function(api, config) {
 
 	api.put = function(path, content, done) {
 		doPostPut(path, content, done, "PUT", config);
+	};
+	
+	api.stats = function(data) {
+		return {
+			max: Math.max.apply(Math, data),
+			min: Math.min.apply(Math, data),
+			mean: getAverageFromNumArr(data, 10),
+			std: getStandardDeviation(data, 10),
+			'var': getVariance(data, 10),
+			n: data.length
+		};
 	};
 };
